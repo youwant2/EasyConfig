@@ -1,10 +1,10 @@
 namespace EasyConfig.SiteExtension
 {
-    using Microsoft.Azure.KeyVault.Models;
+    using Azure.Extensions.AspNetCore.Configuration.Secrets;
+    using Azure.Security.KeyVault.Secrets;
     using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.Configuration.AzureKeyVault;
 
-    public class PrefixKeyVaultSecretManager : IKeyVaultSecretManager
+    public class PrefixKeyVaultSecretManager : KeyVaultSecretManager
     {
         private readonly string prefix;
         private readonly bool removePrefix;
@@ -18,11 +18,21 @@ namespace EasyConfig.SiteExtension
             this.removePrefix = removePrefix;
         }
 
-        public bool Load(SecretItem secret) => secret.Identifier.Name.StartsWith(this.prefix);
+        /// <summary>
+        /// Maps secret to a configuration key.
+        /// </summary>
+        /// <param name="secret">The <see cref="KeyVaultSecret"/> instance.</param>
+        /// <returns>Configuration key name to store secret value.</returns>
+        public override bool Load(SecretProperties secret) => secret.Name.StartsWith(this.prefix);
 
-        public string GetKey(SecretBundle secret)
+        /// <summary>
+        /// Checks if <see cref="KeyVaultSecret"/> value should be retrieved.
+        /// </summary>
+        /// <param name="secret">The <see cref="KeyVaultSecret"/> instance.</param>
+        /// <returns><code>true</code> if secrets value should be loaded, otherwise <code>false</code>.</returns>
+        public override string GetKey(KeyVaultSecret secret)
         {
-            var secretIdentifier = secret.SecretIdentifier.Name;
+            var secretIdentifier = secret.Name;
 
             if (this.removePrefix)
             {

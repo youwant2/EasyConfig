@@ -1,9 +1,9 @@
 namespace EasyConfig.SiteExtension
 {
+    using System;
     using System.Collections.Generic;
+    using Azure.Identity;
     using Microsoft.AspNetCore.Hosting;
-    using Microsoft.Azure.KeyVault;
-    using Microsoft.Azure.Services.AppAuthentication;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Hosting;
 
@@ -53,23 +53,21 @@ namespace EasyConfig.SiteExtension
                         // Add KeyVault only if the uri is not empty
                         if (uriList?.Count > 0)
                         {
-                            // Create Managed Service Identity token provider
-                            var azureServiceTokenProvider = new AzureServiceTokenProvider();
-
-                            // Create the Key Vault client
-                            var keyVaultClient = new KeyVaultClient(
-                                new KeyVaultClient.AuthenticationCallback(
-                                azureServiceTokenProvider.KeyVaultTokenCallback)
-                            );
-
                             foreach (var uri in uriList)
                             {
-                                // Add Key Vault to configuration pipeline
-                                _ = builder.AddAzureKeyVault(
-                                    uri,
-                                    keyVaultClient,
-                                    new PrefixKeyVaultSecretManager()
-                                );
+                                if (Uri.TryCreate(uri, UriKind.Absolute, out var keyvaultUri))
+                                {
+                                    // Add Key Vault to configuration pipeline
+                                    _ = builder.AddAzureKeyVault(
+                                        keyvaultUri,
+                                        new DefaultAzureCredential(),
+                                        new PrefixKeyVaultSecretManager()
+                                    );
+                                }
+                                else
+                                {
+                                    // TODO: Write Log
+                                }
                             }
                         }
                     }
